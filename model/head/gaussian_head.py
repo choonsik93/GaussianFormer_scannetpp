@@ -152,6 +152,12 @@ class GaussianHead(BaseTaskHead):
             gaussians = representation[idx]['gaussian']
 
             means, origi_opa, opacities, scales, CovInv = self.prepare_gaussian_args(gaussians)
+            if self.num_classes < 18:
+                # padding zero value to opaicities for local agg
+                pad_opacities = torch.zeros((opacities.shape[0], opacities.shape[1], 18), device=opacities.device, dtype=opacities.dtype)
+                pad_opacities[:, :, :self.num_classes] = opacities
+                opacities = pad_opacities
+
             bs, g = means.shape[:2]
 
             semantics = self.aggregator(
@@ -161,6 +167,10 @@ class GaussianHead(BaseTaskHead):
                 opacities,
                 scales,
                 CovInv) # 1, c, n
+            
+            if self.num_classes < 18:
+                semantics = semantics[:, :self.num_classes]
+            
             if self.use_localaggprob:
                 if self.combine_geosem:
                     sem = semantics[0][:, :-1] * semantics[1].unsqueeze(-1)

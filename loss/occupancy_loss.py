@@ -29,6 +29,8 @@ nusc_class_frequencies = np.array([
     1892500630
 ])
 
+scannetpp_class_frequencies = np.array([294671, 391874, 400367, 662557, 53231, 95512, 11802, 23398, 89326, 4273, 156463, 600672, 227615854])
+
 
 @OPENOCC_LOSS.register_module()
 class OccupancyLoss(BaseLoss):
@@ -83,10 +85,13 @@ class OccupancyLoss(BaseLoss):
             if manual_class_weight is not None:
                 self.class_weights = torch.tensor(manual_class_weight)
             else:
-                class_freqs = nusc_class_frequencies
+                if num_classes == 13:
+                    class_freqs = scannetpp_class_frequencies
+                else:
+                    class_freqs = nusc_class_frequencies
                 self.class_weights = torch.from_numpy(1 / np.log(class_freqs[:num_classes] + 0.001))
+                print("Class weights:", self.class_weights)
             self.class_weights = num_classes * F.normalize(self.class_weights, 1, -1)
-            print(self.__class__, self.class_weights)
         else:
             self.class_weights = torch.ones(num_classes)
 

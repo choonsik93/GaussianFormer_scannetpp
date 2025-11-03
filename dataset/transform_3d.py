@@ -69,6 +69,22 @@ class NuScenesAdaptor(object):
             np.array(input_dict["img_shape"], dtype=np.float32)[:, :2][:, ::-1]
         )
         return input_dict
+    
+
+# @OPENOCC_TRANSFORMS.register_module()
+# class ScannetppAdaptor(object):
+#     def __init__(self, num_cams, use_ego=False):
+#         self.num_cams = num_cams
+#         self.projection_key = 'ego2img' if use_ego else 'lidar2img'
+
+#     def __call__(self, input_dict):
+#         input_dict["projection_mat"] = np.float32(
+#             np.stack(input_dict[self.projection_key])
+#         )
+#         input_dict["image_wh"] = np.ascontiguousarray(
+#             np.array(input_dict["img_shape"], dtype=np.float32)[:, :2][:, ::-1]
+#         )
+#         return input_dict
 
 
 @OPENOCC_TRANSFORMS.register_module()
@@ -135,6 +151,55 @@ class ResizeCropFlipImage(object):
         ida_mat = torch.eye(3)
         ida_mat[:2, :2] = ida_rot
         ida_mat[:2, 2] = ida_tran
+        return img, ida_mat
+    
+
+@OPENOCC_TRANSFORMS.register_module()
+class ScannetppResizeCropFlipImage(object):
+    def __call__(self, results):
+        aug_configs = results.get("aug_configs")
+        if aug_configs is None:
+            return results
+        resize, resize_dims, crop, flip, rotate = aug_configs
+        assert rotate == 0, "ScannetppResizeCropFlipImage only supports 0 rotation"
+        assert not flip, "ScannetppResizeCropFlipImage only supports no flip"
+        assert crop[0] == 0 and crop[1] == 0, "ScannetppResizeCropFlipImage only supports no crop from top-left"
+        imgs = results["img"]
+        N = len(imgs)
+        new_imgs = []
+        for i in range(N):
+            img = Image.fromarray(np.uint8(imgs[i]))
+            img, ida_mat = self._img_transform(
+                img,
+                resize=resize,
+                resize_dims=resize_dims,
+                crop=crop,
+                flip=flip,
+                rotate=rotate,
+            )
+            mat = np.eye(4)
+            mat[:3, :3] = ida_mat
+            new_imgs.append(np.array(img).astype(np.float32))
+            results["lidar2img"][i] = mat @ results["lidar2img"][i]
+            #results["ego2img"][i] = mat @ results["ego2img"][i]
+
+        results["img"] = new_imgs
+        results["img_shape"] = [x.shape[:2] for x in new_imgs]
+        return results
+
+    def _get_rot(self, h):
+        return torch.Tensor(
+            [
+                [np.cos(h), np.sin(h)],
+                [-np.sin(h), np.cos(h)],
+            ]
+        )
+
+    def _img_transform(self, img, resize, resize_dims, crop, flip, rotate):
+        ida_mat = torch.eye(3)
+        img = img.resize(resize_dims)
+        ida_mat[0][0] *= resize[0]
+        ida_mat[1][1] *= resize[1]
         return img, ida_mat
 
 
@@ -464,6 +529,67 @@ class LoadPseudoPointFromFile(object):
         
         return results
     
+    def __repr__(self):
+        """str: Return a string that describes the module."""
+        repr_str = self.__class__.__name__
+        return repr_str
+    
+
+@OPENOCC_TRANSFORMS.register_module()
+class LoadOccupancyScannetpp(object):
+
+    def __init__(self, occ_path, semantic=False, use_ego=False, use_sweeps=False, perturb=False):
+        self.occ_path = occ_path
+        self.semantic = semantic
+        self.use_ego = use_ego
+        assert semantic and (not use_ego)
+        self.use_sweeps = use_sweeps
+        self.perturb = perturb
+
+        xyz = self.get_meshgrid([-6.0, -6.0, -0.78, 6.0, 6.0, 3.22], [240, 240, 80], 0.05)
+        self.xyz = np.concatenate([xyz, np.ones_like(xyz[..., :1])], axis=-1) # x, y, z, 4
+
+    def get_meshgrid(self, ranges, grid, reso):
+        xxx = torch.arange(grid[0], dtype=torch.float) * reso + 0.5 * reso + ranges[0]
+        yyy = torch.arange(grid[1], dtype=torch.float) * reso + 0.5 * reso + ranges[1]
+        zzz = torch.arange(grid[2], dtype=torch.float) * reso + 0.5 * reso + ranges[2]
+
+        xxx = xxx[:, None, None].expand(*grid)
+        yyy = yyy[None, :, None].expand(*grid)
+        zzz = zzz[None, None, :].expand(*grid)
+
+        xyz = torch.stack([
+            xxx, yyy, zzz
+        ], dim=-1).numpy()
+        return xyz # x, y, z, 3
+
+    def __call__(self, results):
+        label_file = results['pts_filename']
+        label = np.load(label_file)
+
+        new_label = np.zeros((240, 240, 80), dtype=np.int64)
+        new_label[label[:, 0], label[:, 1], label[:, 2]] = label[:, 3]
+        new_label[new_label == 0] = 12
+        new_label[new_label == 255] = 0  # unknown to empty
+
+        mask = new_label != 0
+
+        results['occ_label'] = new_label if self.semantic else new_label != 12
+        results['occ_cam_mask'] = mask
+
+        xyz = self.xyz.copy()
+        if getattr(self, "perturb", False):
+            # xyz[..., :3] = xyz[..., :3] + (np.random.rand(*xyz.shape[:-1], 3) - 0.5) * (0.5 - 1e-3)
+            norm_distribution = np.clip(np.random.randn(*xyz.shape[:-1], 3) / 6, -0.5, 0.5)
+            xyz[..., :3] = xyz[..., :3] + norm_distribution * 0.49
+
+        if not self.use_ego:
+            occ_xyz = xyz[..., :3]
+        else:
+            NotImplementedError
+        results['occ_xyz'] = occ_xyz
+        return results
+
     def __repr__(self):
         """str: Return a string that describes the module."""
         repr_str = self.__class__.__name__

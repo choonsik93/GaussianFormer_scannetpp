@@ -1,27 +1,38 @@
 _base_ = [
-    './_base_/misc.py',
-    './_base_/model.py',
-    './_base_/surroundocc.py'
+    '_base_scannetpp/misc.py',
+    '_base_scannetpp/model.py',
+    '_base_scannetpp/surroundocc.py'
 ]
 
-# =========== data config ==============
+# # =========== data config ==============
+# input_shape = (1752, 1168)
+# data_aug_conf = {
+#     "resize_lim": (1.0, 1.0),
+#     "final_dim": input_shape[::-1],
+#     "bot_pct_lim": (0.0, 0.0),
+#     "rot_lim": (0.0, 0.0),
+#     "H": 480,
+#     "W": 640,
+#     "rand_flip": True,
+# }
+# val_dataset_config = dict(
+#     data_aug_conf=data_aug_conf
+# )
+# train_dataset_config = dict(
+#     data_aug_conf=data_aug_conf
+# )
 
-input_shape = (1600, 864)
-data_aug_conf = {
-    "resize_lim": (1.0, 1.0),
-    "final_dim": input_shape[::-1],
-    "bot_pct_lim": (0.0, 0.0),
-    "rot_lim": (0.0, 0.0),
-    "H": 900,
-    "W": 1600,
-    "rand_flip": True,
-}
+CLASS_FREQ = [294671, 391874, 400367, 662557, 53231, 95512, 11802, 23398, 89326, 4273, 156463, 600672, 227615854]
+
+_num_cams_ = 1
+
 val_dataset_config = dict(
-    data_aug_conf=data_aug_conf
+    num_cams=_num_cams_
 )
 train_dataset_config = dict(
-    data_aug_conf=data_aug_conf
+    num_cams=_num_cams_
 )
+
 # =========== misc config ==============
 optimizer = dict(
     optimizer = dict(
@@ -40,8 +51,8 @@ loss = dict(
         dict(
             type='OccupancyLoss',
             weight=1.0,
-            empty_label=17,
-            num_classes=18,
+            empty_label=12,
+            num_classes=13,
             use_focal_loss=False,
             use_dice_loss=False,
             balance_cls_weight=True,
@@ -50,11 +61,13 @@ loss = dict(
                 loss_voxel_lovasz_weight=1.0),
             use_sem_geo_scal_loss=False,
             use_lovasz_loss=True,
-            lovasz_ignore=17,
-            manual_class_weight=[
-                1.01552756, 1.06897009, 1.30013094, 1.07253735, 0.94637502, 1.10087012,
-                1.26960524, 1.06258364, 1.189019,   1.06217292, 1.00595144, 0.85706115,
-                1.03923299, 0.90867526, 0.8936431,  0.85486129, 0.8527829,  0.5       ])
+            lovasz_ignore=12,
+            manual_class_weight=None,
+            # manual_class_weight=[
+            #     1.01552756, 1.06897009, 1.30013094, 1.07253735, 0.94637502, 1.10087012,
+            #     1.26960524, 1.06258364, 1.189019,   1.06217292, 1.00595144, 0.85706115,
+            #     1.03923299, 0.90867526, 0.8936431,  0.85486129, 0.8527829,  0.5       ]
+            )
         ])
 
 loss_input_convertion = dict(
@@ -67,14 +80,14 @@ loss_input_convertion = dict(
 embed_dims = 128
 num_decoder = 4
 num_single_frame_decoder = 1
-pc_range = [-50.0, -50.0, -5.0, 50.0, 50.0, 3.0]
-scale_range = [0.08, 0.32]
+pc_range = [-6.0, -6.0, -0.78, 6.0, 6.0, 3.22]
+scale_range = [0.01, 0.08]
 xyz_coordinate = 'cartesian'
 phi_activation = 'sigmoid'
 include_opa = False
-load_from = 'ckpts/r101_dcn_fcos3d_pretrain.pth'
+# load_from = 'ckpts/r101_dcn_fcos3d_pretrain.pth'
 semantics = True
-semantic_dim = 18
+semantic_dim = 13
 
 model = dict(
     img_backbone_out_indices=[0, 1, 2, 3],
@@ -95,7 +108,7 @@ model = dict(
         start_level=1),
     lifter=dict(
         type='GaussianLifter',
-        num_anchor=144000,
+        num_anchor=14000,
         embed_dims=embed_dims,
         anchor_grad=True,
         feat_grad=False,
@@ -122,6 +135,7 @@ model = dict(
         ),
         deformable_model=dict(
             embed_dims=embed_dims,
+            num_cams=_num_cams_,
             kps_generator=dict(
                 embed_dims=embed_dims,
                 phi_activation=phi_activation,
@@ -137,7 +151,7 @@ model = dict(
             pc_range=pc_range,
             scale_range=scale_range,
             restrict_xyz=True,
-            unit_xyz=[2.0, 2.0, 0.5],
+            unit_xyz=[0.1, 0.1, 0.05],
             refine_manual=[0, 1, 2],
             phi_activation=phi_activation,
             semantics=semantics,
@@ -152,7 +166,7 @@ model = dict(
             in_channels=embed_dims,
             embed_channels=embed_dims,
             pc_range=pc_range,
-            grid_size=[0.5, 0.5, 0.5],
+            grid_size=[0.05, 0.05, 0.05],
             phi_activation=phi_activation,
             xyz_coordinate=xyz_coordinate
         ),
@@ -181,8 +195,8 @@ model = dict(
         cuda_kwargs=dict(
             _delete_=True,
             scale_multiplier=3,
-            H=200, W=200, D=16,
-            pc_min=[-50.0, -50.0, -5.0],
-            grid_size=0.5),
+            H=240, W=240, D=80,
+            pc_min=[-6.0, -6.0, -0.78],
+            grid_size=0.05),
     )
 )

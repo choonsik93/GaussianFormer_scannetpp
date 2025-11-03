@@ -95,13 +95,53 @@ def main(local_rank, args):
         raw_model = my_model
     logger.info('done ddp model')
 
-    train_dataset_loader, val_dataset_loader = get_dataloader(
-        cfg.train_dataset_config,
-        cfg.val_dataset_config,
-        cfg.train_loader,
-        cfg.val_loader,
-        dist=distributed,
-        iter_resume=args.iter_resume)
+    from copy import deepcopy
+    from mmseg.registry import DATASETS           # mmdet 쓰면 거기서 import
+    from mmengine.dataset import DefaultSampler, default_collate
+    from torch.utils.data import DataLoader
+
+    # 1) config 복사
+    train_cfg = deepcopy(cfg.train_dataloader)
+    val_cfg   = deepcopy(cfg.val_dataloader)
+
+    # 2) dataset 먼저 빌드
+    train_dataset = DATASETS.build(train_cfg.pop('dataset'))
+    val_dataset   = DATASETS.build(val_cfg.pop('dataset'))
+
+    # 3) sampler 구성 (DefaultSampler가 분산/비분산 모두 처리)
+    train_sampler = DefaultSampler(train_dataset, shuffle=train_cfg['sampler'].get('shuffle', True))
+    val_sampler   = DefaultSampler(val_dataset,   shuffle=val_cfg['sampler'].get('shuffle', False))
+
+    # 4) PyTorch DataLoader로 감싸기
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=train_cfg.get('batch_size', 1),
+        num_workers=train_cfg.get('num_workers', 1),
+        sampler=train_sampler,
+        persistent_workers=train_cfg.get('persistent_workers', False),
+        drop_last=train_cfg.get('drop_last', True),
+        collate_fn=default_collate,
+        pin_memory=True,
+    )
+
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=val_cfg.get('batch_size', 1),
+        num_workers=val_cfg.get('num_workers', 1),
+        sampler=val_sampler,
+        persistent_workers=val_cfg.get('persistent_workers', False),
+        drop_last=val_cfg.get('drop_last', False),
+        collate_fn=default_collate,
+        pin_memory=True,
+    )
+
+    # train_dataset_loader, val_dataset_loader = get_dataloader(
+    #     cfg.train_dataset_config,
+    #     cfg.val_dataset_config,
+    #     cfg.train_loader,
+    #     cfg.val_loader,
+    #     dist=distributed,
+    #     iter_resume=args.iter_resume)
 
     # get optimizer, loss, scheduler
     optimizer = build_optim_wrapper(my_model, cfg.optimizer)
@@ -172,24 +212,15 @@ def main(local_rank, args):
     grad_accumulation = args.gradient_accumulation
     grad_norm = 0
     from misc.metric_util import MeanIoU
-    if cfg.dataset_type == 'ScannetppDataset':
-        miou_metric = MeanIoU(
-            list(range(1, 12)),
-            12, #17,
-            ['ceiling', 'floor', 'wall', 'window', 'chair', 'bed', 'sofa',
-               'table', 'tv', 'furniture', 'objects'],
-            True, 12, filter_minmax=False)
-        miou_metric.reset()
-    else:
-        miou_metric = MeanIoU(
-            list(range(1, 17)),
-            17, #17,
-            ['barrier', 'bicycle', 'bus', 'car', 'construction_vehicle',
-            'motorcycle', 'pedestrian', 'traffic_cone', 'trailer', 'truck',
-            'driveable_surface', 'other_flat', 'sidewalk', 'terrain', 'manmade',
-            'vegetation'],
-            True, 17, filter_minmax=False)
-        miou_metric.reset()
+    miou_metric = MeanIoU(
+        list(range(1, 17)),
+        17, #17,
+        ['barrier', 'bicycle', 'bus', 'car', 'construction_vehicle',
+         'motorcycle', 'pedestrian', 'traffic_cone', 'trailer', 'truck',
+         'driveable_surface', 'other_flat', 'sidewalk', 'terrain', 'manmade',
+         'vegetation'],
+         True, 17, filter_minmax=False)
+    miou_metric.reset()
 
     while epoch < max_num_epochs:
         my_model.train()
@@ -323,7 +354,6 @@ def main(local_rank, args):
                         pred_occ = pred
                         gt_occ = result_dict['sampled_label'][idx]
                         occ_mask = result_dict['occ_mask'][idx].flatten()
-                        print(torch.unique(pred_occ), torch.unique(gt_occ))
                         miou_metric._after_step(pred_occ, gt_occ, occ_mask)
                 
                 val_loss_list.append(loss.detach().cpu().numpy())

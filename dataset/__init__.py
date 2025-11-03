@@ -4,6 +4,7 @@ OPENOCC_DATAWRAPPER = Registry('openocc_datawrapper')
 OPENOCC_TRANSFORMS = Registry('openocc_transforms')
 
 from .dataset import NuScenesDataset
+from .scannetpp_dataset import ScannetppDataset
 from .transform_3d import *
 from .sampler import CustomDistributedSampler
 from .utils import custom_collate_fn_temporal
@@ -45,7 +46,7 @@ def get_dataloader(
             pin_memory=True)
 
         return None, val_dataset_loader
-
+    
     train_wrapper = OPENOCC_DATASET.build(
         train_dataset_config)
     val_wrapper = OPENOCC_DATASET.build(

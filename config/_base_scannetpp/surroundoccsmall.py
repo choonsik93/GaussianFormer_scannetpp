@@ -32,7 +32,7 @@ backend_args = None
 
 train_pipeline = [
     dict(type="LoadMultiViewImageFromFiles", to_float32=True),
-    dict(type="LoadOccupancyScannetpp", occ_path=occ_path, semantic=True, use_ego=False),
+    dict(type="LoadOccupancyScannetpp", occ_path=occ_path, semantic=True, use_ego=False, voxel_dims=(40, 40, 16)),
     dict(type="ScannetppResizeCropFlipImage"),
     dict(type="PhotoMetricDistortionMultiViewImage"),
     dict(type="NormalizeMultiviewImage", **img_norm_cfg),
@@ -42,7 +42,7 @@ train_pipeline = [
 
 test_pipeline = [
     dict(type="LoadMultiViewImageFromFiles", to_float32=True),
-    dict(type="LoadOccupancyScannetpp", occ_path=occ_path, semantic=True, use_ego=False),
+    dict(type="LoadOccupancyScannetpp", occ_path=occ_path, semantic=True, use_ego=False, voxel_dims=(40, 40, 16)),
     dict(type="ScannetppResizeCropFlipImage"),
     dict(type="NormalizeMultiviewImage", **img_norm_cfg),
     dict(type="DefaultFormatBundle"),

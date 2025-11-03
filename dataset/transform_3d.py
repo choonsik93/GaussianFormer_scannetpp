@@ -538,7 +538,7 @@ class LoadPseudoPointFromFile(object):
 @OPENOCC_TRANSFORMS.register_module()
 class LoadOccupancyScannetpp(object):
 
-    def __init__(self, occ_path, semantic=False, use_ego=False, use_sweeps=False, perturb=False):
+    def __init__(self, occ_path, semantic=False, use_ego=False, use_sweeps=False, perturb=False, small_bound=False):
         self.occ_path = occ_path
         self.semantic = semantic
         self.use_ego = use_ego
@@ -546,7 +546,11 @@ class LoadOccupancyScannetpp(object):
         self.use_sweeps = use_sweeps
         self.perturb = perturb
 
-        xyz = self.get_meshgrid([-6.0, -6.0, -0.78, 6.0, 6.0, 3.22], [240, 240, 80], 0.05)
+        self.small_bound = small_bound
+        if self.small_bound:
+            xyz = self.get_meshgrid(pc_range = [-3.2, -3.2, -0.78, 3.2, 3.2, 1.78], [40, 40, 16], 0.16)
+        else:
+            xyz = self.get_meshgrid([-6.0, -6.0, -0.78, 6.0, 6.0, 3.22], [240, 240, 80], 0.05)
         self.xyz = np.concatenate([xyz, np.ones_like(xyz[..., :1])], axis=-1) # x, y, z, 4
 
     def get_meshgrid(self, ranges, grid, reso):
@@ -567,7 +571,10 @@ class LoadOccupancyScannetpp(object):
         label_file = results['pts_filename']
         label = np.load(label_file)
 
-        new_label = np.zeros((240, 240, 80), dtype=np.int64)
+        if self.small_bound:
+            new_label = np.zeros((40, 40, 16), dtype=np.int64)
+        else:
+            new_label = np.zeros((240, 240, 80), dtype=np.int64)
         new_label[label[:, 0], label[:, 1], label[:, 2]] = label[:, 3]
         new_label[new_label == 0] = 12
         new_label[new_label == 255] = 0  # unknown to empty

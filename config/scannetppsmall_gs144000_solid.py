@@ -1,7 +1,7 @@
 _base_ = [
     '_base_scannetpp/misc.py',
     '_base_scannetpp/model.py',
-    '_base_scannetpp/surroundocc.py'
+    '_base_scannetpp/surroundoccsmall.py'
 ]
 
 # # =========== data config ==============
@@ -27,10 +27,12 @@ CLASS_FREQ = [294671, 391874, 400367, 662557, 53231, 95512, 11802, 23398, 89326,
 _num_cams_ = 20
 
 val_dataset_config = dict(
-    num_cams=_num_cams_
+    num_cams=_num_cams_,
+    ann_file=data_root + '/scannetpp_infos_val.pkl',
 )
 train_dataset_config = dict(
-    num_cams=_num_cams_
+    num_cams=_num_cams_,
+    ann_file=data_root + '/scannetpp_infos_train.pkl',
 )
 
 # =========== misc config ==============
@@ -61,7 +63,7 @@ loss = dict(
                 loss_voxel_lovasz_weight=1.0),
             use_sem_geo_scal_loss=False,
             use_lovasz_loss=True,
-            lovasz_ignore=0,
+            lovasz_ignore=12,
             manual_class_weight=None,
             # manual_class_weight=[
             #     1.01552756, 1.06897009, 1.30013094, 1.07253735, 0.94637502, 1.10087012,
@@ -80,15 +82,15 @@ loss_input_convertion = dict(
 embed_dims = 128
 num_decoder = 4
 num_single_frame_decoder = 1
-pc_range = [-6.0, -6.0, -0.78, 6.0, 6.0, 3.22]
+pc_range = [-3.2, -3.2, -0.78, 3.2, 3.2, 1.78]
 #scale_range = [0.01, 0.08]
-scale_range = [0.08, 0.32]
+scale_range = [0.08, 0.64]
 xyz_coordinate = 'cartesian'
 phi_activation = 'sigmoid'
-include_opa = False
+include_opa = True
 # load_from = 'ckpts/r101_dcn_fcos3d_pretrain.pth'
 semantics = True
-semantic_dim = 13
+semantic_dim = 12
 
 model = dict(
     img_backbone_out_indices=[0, 1, 2, 3],
@@ -109,7 +111,7 @@ model = dict(
         start_level=1),
     lifter=dict(
         type='GaussianLifter',
-        num_anchor=14400,
+        num_anchor=20000,
         embed_dims=embed_dims,
         anchor_grad=True,
         feat_grad=False,
@@ -152,14 +154,14 @@ model = dict(
             pc_range=pc_range,
             scale_range=scale_range,
             restrict_xyz=True,
-            unit_xyz=[0.05, 0.05, 0.05],
+            unit_xyz=[0.16, 0.16, 0.16],
             refine_manual=[0, 1, 2],
             phi_activation=phi_activation,
             semantics=semantics,
             semantic_dim=semantic_dim,
             include_opa=include_opa,
             xyz_coordinate=xyz_coordinate,
-            semantics_activation='identity',
+            semantics_activation='softplus',
         ),
         spconv_layer=dict(
             _delete_=True,
@@ -167,9 +169,10 @@ model = dict(
             in_channels=embed_dims,
             embed_channels=embed_dims,
             pc_range=pc_range,
-            grid_size=[0.05, 0.05, 0.05],
+            grid_size=[0.16, 0.16, 0.16],
             phi_activation=phi_activation,
-            xyz_coordinate=xyz_coordinate
+            xyz_coordinate=xyz_coordinate,
+            use_out_proj=True,
         ),
         num_decoder=num_decoder,
         num_single_frame_decoder=num_single_frame_decoder,
@@ -189,15 +192,20 @@ model = dict(
     ),
     head=dict(
         type='GaussianHead',
-        apply_loss_type='all',
-        num_classes=semantic_dim,
-        empty_args=None,
-        with_empty=False,
+        apply_loss_type='random_1',
+        num_classes=semantic_dim + 1,
+        empty_args=dict(
+            _delete_=True,
+            mean=[0, 0, 0.5],
+            scale=[6.4, 6.4, 2.56],
+        ),
+        empty_label=semantic_dim,
+        with_empty=True,
         cuda_kwargs=dict(
             _delete_=True,
             scale_multiplier=3,
-            H=240, W=240, D=80,
-            pc_min=[-6.0, -6.0, -0.78],
-            grid_size=0.05),
+            H=40, W=40, D=16,
+            pc_min=[-3.2, -3.2, -0.78],
+            grid_size=0.16),
     )
 )

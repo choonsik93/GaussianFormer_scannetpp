@@ -61,7 +61,7 @@ loss = dict(
                 loss_voxel_lovasz_weight=1.0),
             use_sem_geo_scal_loss=False,
             use_lovasz_loss=True,
-            lovasz_ignore=0,
+            lovasz_ignore=12,
             manual_class_weight=None,
             # manual_class_weight=[
             #     1.01552756, 1.06897009, 1.30013094, 1.07253735, 0.94637502, 1.10087012,

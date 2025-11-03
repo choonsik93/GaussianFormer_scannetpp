@@ -216,7 +216,7 @@ def flatten_probas(probas, labels, ignore=None):
         return probas, labels
 
     elif probas.dim() == 3:
-        # assumes output of a sigmoid layer
+        # assumes output of a sigmoid layergg;
         B, H, W = probas.size()
         probas = probas.view(B, 1, H, W)
     elif probas.dim() == 5:
@@ -231,6 +231,7 @@ def flatten_probas(probas, labels, ignore=None):
     valid = (labels != ignore)
     vprobas = probas[valid.nonzero().squeeze()]
     vlabels = labels[valid]
+    print(torch.unique(vlabels), torch.unique(torch.argmax(vprobas, -1)))
     return vprobas, vlabels
 
 def xloss(logits, labels, ignore=None):

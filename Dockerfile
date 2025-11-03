@@ -46,18 +46,6 @@ RUN pip install ftfy regex numba timm tensorboard einops jaxtyping
 
 RUN apt-get install -y python3-tk
 
-# WORKDIR /home/appuser/GaussianFormer
-# COPY . /home/appuser/GaussianFormer
+RUN apt-get update && apt-get install -y cmake
 
-# ENV CUDA_HOME=/usr/local/cuda
-# ENV PATH=/usr/local/cuda-11.8/bin:${PATH}
-# ENV LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:/lib64:${LD_LIBRARY_PATH}
-
-# ARG TORCH_ARCH
-# ENV TORCH_CUDA_ARCH_LIST="${TORCH_ARCH}"
-# ENV FORCE_CUDA=1
-
-# RUN cd /home/appuser/GaussianFormer/model/encoder/gaussian_encoder/ops && pip install -e .
-# RUN cd /home/appuser/GaussianFormer/model/head/localagg && pip install -e .
-# RUN cd /home/appuser/GaussianFormer/model/head/localagg_prob && pip install -e .
-# RUN cd /home/appuser/GaussianFormer/model/head/localagg_prob_fast && pip install -e .
+RUN pip install -U pip setuptools wheel

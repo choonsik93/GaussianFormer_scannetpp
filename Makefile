@@ -34,12 +34,13 @@ build-image:
 	-e DISPLAY=$(DISPLAY) \
 	--name=gaussianformer \
 	--ipc=host gaussianformer:latest
-	docker exec -it gaussianformer sh -c "cd model/encoder/gaussian_encoder/ops && pip install -e ."
-	docker exec -it gaussianformer sh -c "cd model/head/localagg && pip install -e ."
-	docker exec -it gaussianformer sh -c "cd model/head/localagg_prob && pip install -e ."
-	docker exec -it gaussianformer sh -c "cd model/head/localagg_prob_fast && pip install -e ."
+	docker exec -it gaussianformer sh -c "cd model/encoder/gaussian_encoder/ops && pip install --no-build-isolation -e ."
+	docker exec -it gaussianformer sh -c "cd model/head/localagg && pip install --no-build-isolation -e ."
+	docker exec -it gaussianformer sh -c "cd model/head/localagg_prob && pip install --no-build-isolation -e ."
+	docker exec -it gaussianformer sh -c "cd model/head/localagg_prob_fast && pip install --no-build-isolation -e ."
 	docker commit gaussianformer gaussianformer:latest
 	docker stop gaussianformer
+
 
 run:
 	docker run -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$(DISPLAY) -e USER=$(USER) \
@@ -50,6 +51,11 @@ run:
 	-v "${SCANNET_PATH}":/data \
 	--shm-size 128G \
 	--net host --gpus all --privileged --name gaussianformer gaussianformer:latest /bin/bash
+
+# cd /home/appuser/GaussianFormer/model/encoder/gaussian_encoder/ops && pip install -v --no-build-isolation -e .
+# cd /home/appuser/GaussianFormer/model/head/localagg && pip install -v --no-build-isolation -e .
+# cd /home/appuser/GaussianFormer/model/head/localagg_prob && pip install -v --no-build-isolation -e .
+# cd /home/appuser/GaussianFormer/model/head/localagg_prob_fast && pip install -v --no-build-isolation -e .
 
 # docker run -d --gpus all -it --rm --net=host \
 # -v /tmp/.X11-unix:/tmp/.X11-unix \
@@ -66,6 +72,9 @@ run:
 # docker exec -it gaussianformer sh -c "cd model/head/localagg_prob_fast && pip install -e ."
 
 # export SCANNET_PATH=/media/sequor/PortableSSD/scannetpp && make run
+# python train.py --py-config config/scannetpp_gs144000.py --work-dir out/scannetpp
+
+# export SCANNET_PATH=/data/scannetpp && make run
 # python train.py --py-config config/scannetpp_gs144000.py --work-dir out/scannetpp
 
 

@@ -90,7 +90,6 @@ class OccupancyLoss(BaseLoss):
                 else:
                     class_freqs = nusc_class_frequencies
                 self.class_weights = torch.from_numpy(1 / np.log(class_freqs[:num_classes] + 0.001))
-                print("Class weights:", self.class_weights)
             self.class_weights = num_classes * F.normalize(self.class_weights, 1, -1)
         else:
             self.class_weights = torch.ones(num_classes)

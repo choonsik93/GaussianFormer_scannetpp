@@ -24,15 +24,13 @@ _base_ = [
 
 CLASS_FREQ = [294671, 391874, 400367, 662557, 53231, 95512, 11802, 23398, 89326, 4273, 156463, 600672, 227615854]
 
-_num_cams_ = 20
+_num_cams_ = 4
 
 val_dataset_config = dict(
-    num_cams=_num_cams_,
-    ann_file=data_root + '/scannetpp_infos_val.pkl',
+    num_cams=_num_cams_
 )
 train_dataset_config = dict(
-    num_cams=_num_cams_,
-    ann_file=data_root + '/scannetpp_infos_train.pkl',
+    num_cams=_num_cams_
 )
 
 # =========== misc config ==============

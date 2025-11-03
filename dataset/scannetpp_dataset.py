@@ -28,6 +28,7 @@ class ScannetppDataset(Dataset):
         vis_scene_index=-1,
         phase='train',
         metainfo=None,
+        small_bound=False,
         return_keys=[
             'img',
             'projection_mat',
@@ -45,6 +46,7 @@ class ScannetppDataset(Dataset):
         self.ann_file = ann_file
 
         self.num_cams = num_cams
+        self.small_bound = small_bound
 
         self.data_aug_conf = data_aug_conf
         self.test_mode = (phase != 'train')
@@ -128,8 +130,12 @@ class ScannetppDataset(Dataset):
             info['occ2cam'].append(align_global2cam.astype(np.float32))
             #info['cam2img'].append(info['images'][i]['cam2img'].astype(np.float32))
 
-        info['occ_filename'] = os.path.join(self.data_prefix.get('img_path', ''),
-                                            'occupancy_2x', info['sample_idx'], 'occupancy.npy')
+        if self.small_bound:
+            info['occ_filename'] = os.path.join(self.data_prefix.get('img_path', ''),
+                                                'occupancy', info['sample_idx'], 'occupancy.npy')
+        else:
+            info['occ_filename'] = os.path.join(self.data_prefix.get('img_path', ''),
+                                                'occupancy_2x', info['sample_idx'], 'occupancy.npy')
 
         return info
 

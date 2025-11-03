@@ -548,7 +548,7 @@ class LoadOccupancyScannetpp(object):
 
         self.small_bound = small_bound
         if self.small_bound:
-            xyz = self.get_meshgrid(pc_range = [-3.2, -3.2, -0.78, 3.2, 3.2, 1.78], [40, 40, 16], 0.16)
+            xyz = self.get_meshgrid([-3.2, -3.2, -0.78, 3.2, 3.2, 1.78], [40, 40, 16], 0.16)
         else:
             xyz = self.get_meshgrid([-6.0, -6.0, -0.78, 6.0, 6.0, 3.22], [240, 240, 80], 0.05)
         self.xyz = np.concatenate([xyz, np.ones_like(xyz[..., :1])], axis=-1) # x, y, z, 4

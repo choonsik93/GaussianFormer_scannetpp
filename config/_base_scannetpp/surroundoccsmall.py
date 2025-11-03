@@ -32,7 +32,7 @@ backend_args = None
 
 train_pipeline = [
     dict(type="LoadMultiViewImageFromFiles", to_float32=True),
-    dict(type="LoadOccupancyScannetpp", occ_path=occ_path, semantic=True, use_ego=False, voxel_dims=(40, 40, 16)),
+    dict(type="LoadOccupancyScannetpp", occ_path=occ_path, semantic=True, use_ego=False, small_bound=True),
     dict(type="ScannetppResizeCropFlipImage"),
     dict(type="PhotoMetricDistortionMultiViewImage"),
     dict(type="NormalizeMultiviewImage", **img_norm_cfg),
@@ -42,7 +42,7 @@ train_pipeline = [
 
 test_pipeline = [
     dict(type="LoadMultiViewImageFromFiles", to_float32=True),
-    dict(type="LoadOccupancyScannetpp", occ_path=occ_path, semantic=True, use_ego=False, voxel_dims=(40, 40, 16)),
+    dict(type="LoadOccupancyScannetpp", occ_path=occ_path, semantic=True, use_ego=False, small_bound=True),
     dict(type="ScannetppResizeCropFlipImage"),
     dict(type="NormalizeMultiviewImage", **img_norm_cfg),
     dict(type="DefaultFormatBundle"),
@@ -90,9 +90,10 @@ data_aug_conf = {
 train_dataset_config = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file=data_root + '/scannetpp_infos_2x_train.pkl',
+    ann_file=data_root + '/scannetpp_infos_train.pkl',
     data_aug_conf=data_aug_conf,
     pipeline=train_pipeline,
+    small_bound=True,
     phase='train',
     metainfo=metainfo,
 )
@@ -100,9 +101,10 @@ train_dataset_config = dict(
 val_dataset_config = dict(
     type=dataset_type,
     data_root=data_root,
-    ann_file=data_root + '/scannetpp_infos_2x_val.pkl',
+    ann_file=data_root + '/scannetpp_infos_val.pkl',
     data_aug_conf=data_aug_conf,
     pipeline=test_pipeline,
+    small_bound=True,
     phase='val',
     metainfo=metainfo,
 )

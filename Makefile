@@ -78,6 +78,7 @@ run:
 
 # export SCANNET_PATH=/data/scannetpp && make run
 # python train.py --py-config config/scannetpp_gs144000.py --work-dir out/scannetpp
+# python train.py --py-config config/scannetppsmall_gs144000_solid.py --work-dir out/scannetpp
 
 
 # userful commands

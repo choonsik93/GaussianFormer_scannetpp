@@ -53,7 +53,7 @@ def draw(voxels, voxel_origin, voxel_size):
         g_zz = np.arange(0, dims[2]) # [0, 1, ..., 32]
 
         # Obtaining the grid with coords...
-        xx, yy, zz = np.meshgrid(g_xx, g_yy, g_zz)
+        xx, yy, zz = np.meshgrid(g_xx, g_yy, g_zz, indexing='ij')
         coords_grid = np.array([xx.flatten(), yy.flatten(), zz.flatten()]).T
         coords_grid = coords_grid.astype(np.float32)
         resolution = np.array(resolution, dtype=np.float32).reshape([1, 3])
@@ -74,11 +74,14 @@ def draw(voxels, voxel_origin, voxel_size):
     colors = NYU_COLORS[voxel_label[:, 3].astype(np.int32), :3] / 255.0
     o3d_pcd.colors = o3d.utility.Vector3dVector(colors)
     o3d_voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(o3d_pcd, voxel_size=voxel_size)
+    o3d_global_axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=6.0, origin=[0,0,0])
 
     #o3d_cam_axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2, origin=[0,0,0])
     #o3d_cam_axis.transform(cam_pose)
 
-    o3d.visualization.draw_geometries([o3d_voxel_grid])
+    o3d.visualization.draw_geometries([o3d_voxel_grid, o3d_global_axis])
+
+    return o3d_voxel_grid
 
 def pass_print(*args, **kwargs):
     pass
@@ -202,6 +205,14 @@ def main(local_rank, args):
                'table', 'tv', 'furniture', 'objects'],
             True, 12, filter_minmax=False)
         miou_metric.reset()
+        if cfg.train_dataset_config.get('small_bound', False):
+            occ_shape = [40, 40, 16]
+            pc_range = cfg.pc_range
+            grid_size = 0.16
+        else:
+            occ_shape = [240, 240, 80]
+            pc_range = cfg.pc_range
+            grid_size = 0.05
     else:
         miou_metric = MeanIoU(
             list(range(1, 17)),
@@ -251,19 +262,38 @@ def main(local_rank, args):
                 pred_occ = pred
                 gt_occ = result_dict['sampled_label'][idx]
                 # remap 12 -> 0, 0 -> 12
-                occ_shape = [40, 40, 16]
                 unknown_mask = (pred_occ == 0)
                 empty_mask = (pred_occ == 12)
                 pred_occ[unknown_mask] = 12
                 pred_occ[empty_mask] = 0
                 pred_occ = pred_occ.view(1, *occ_shape)
-                draw(pred_occ.cpu().numpy()[0], voxel_origin=cfg.pc_range, voxel_size=cfg.grid_size)
+                draw(pred_occ.cpu().numpy()[0], voxel_origin=pc_range, voxel_size=grid_size)
                 unknown_mask = (gt_occ == 0)
                 empty_mask = (gt_occ == 12)
                 gt_occ[unknown_mask] = 12
                 gt_occ[empty_mask] = 0
                 gt_occ = gt_occ.view(1, *occ_shape)
-                draw(gt_occ.cpu().numpy()[0], voxel_origin=cfg.pc_range, voxel_size=cfg.grid_size)
+                o3d_voxel_grid = draw(gt_occ.cpu().numpy()[0], voxel_origin=pc_range, voxel_size=grid_size)
+
+                o3d_cam_axis_list = []
+                for i in range(data['cam_positions'].shape[1]):
+                    cam_pos = data['cam_positions'][0, i].cpu().numpy()
+                    cam_focal = data['focal_positions'][0, i].cpu().numpy()
+                    z_axis = cam_focal - cam_pos
+                    z_axis = z_axis / np.linalg.norm(z_axis)
+                    x_axis = np.cross(np.array([0, 0, 1]), z_axis)
+                    x_axis = x_axis / np.linalg.norm(x_axis)
+                    y_axis = np.cross(z_axis, x_axis)
+                    cam_pose = np.eye(4)
+                    cam_pose[:3, 0] = x_axis
+                    cam_pose[:3, 1] = y_axis
+                    cam_pose[:3, 2] = z_axis
+                    cam_pose[:3, 3] = cam_pos
+                    o3d_cam_axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=[0,0,0])
+                    o3d_cam_axis.transform(cam_pose)
+                    o3d_cam_axis_list.append(o3d_cam_axis)
+                    
+                o3d.visualization.draw_geometries([o3d_voxel_grid, *o3d_cam_axis_list])
 
                 miou_metric._after_step(pred_occ, gt_occ)
             

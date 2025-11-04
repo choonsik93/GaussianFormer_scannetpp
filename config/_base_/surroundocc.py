@@ -35,7 +35,7 @@ data_aug_conf = {
     "rot_lim": (-5.4, 5.4),
     "H": 900,
     "W": 1600,
-    "rand_flip": True,
+    "rand_flip": False,
 }
 
 train_dataset_config = dict(

@@ -81,6 +81,7 @@ embed_dims = 128
 num_decoder = 4
 num_single_frame_decoder = 1
 pc_range = [-3.2, -3.2, -0.78, 3.2, 3.2, 1.78]
+grid_size = 0.16
 #scale_range = [0.01, 0.08]
 scale_range = [0.08, 0.64]
 xyz_coordinate = 'cartesian'

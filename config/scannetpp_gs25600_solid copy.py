@@ -24,7 +24,7 @@ _base_ = [
 
 CLASS_FREQ = [294671, 391874, 400367, 662557, 53231, 95512, 11802, 23398, 89326, 4273, 156463, 600672, 227615854]
 
-_num_cams_ = 20
+_num_cams_ = 40
 
 val_dataset_config = dict(
     num_cams=_num_cams_
@@ -109,7 +109,7 @@ model = dict(
         start_level=1),
     lifter=dict(
         type='GaussianLifter',
-        num_anchor=20000,
+        num_anchor=25600,
         embed_dims=embed_dims,
         anchor_grad=True,
         feat_grad=False,

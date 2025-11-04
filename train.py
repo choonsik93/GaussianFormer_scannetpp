@@ -276,7 +276,7 @@ def main(local_rank, args):
                     logger.info(f'iter ckpt {i_iter + 1} saved!')
         
         # save checkpoint
-        if local_rank == 0:
+        if local_rank == 0 and (epoch + 1) % 10 == 0:
             dict_to_save = {
                 'state_dict': raw_model.state_dict(),
                 'optimizer': optimizer.state_dict(),

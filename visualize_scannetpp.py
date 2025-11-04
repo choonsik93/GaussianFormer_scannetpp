@@ -256,14 +256,14 @@ def main(local_rank, args):
                 empty_mask = (pred_occ == 12)
                 pred_occ[unknown_mask] = 12
                 pred_occ[empty_mask] = 0
-                pred_occ = pred_occ.view(occ_shape[0], occ_shape[1], occ_shape[2]).cpu().numpy()
-                draw(pred_occ, voxel_origin=cfg.pc_range, voxel_size=cfg.grid_size)
+                pred_occ = pred_occ.view(1, *occ_shape)
+                draw(pred_occ.cpu().numpy()[0], voxel_origin=cfg.pc_range, voxel_size=cfg.grid_size)
                 unknown_mask = (gt_occ == 0)
                 empty_mask = (gt_occ == 12)
                 gt_occ[unknown_mask] = 12
                 gt_occ[empty_mask] = 0
-                gt_occ = gt_occ.view(occ_shape[0], occ_shape[1], occ_shape[2]).cpu().numpy()
-                draw(gt_occ, voxel_origin=cfg.pc_range, voxel_size=cfg.grid_size)
+                gt_occ = gt_occ.view(1, *occ_shape)
+                draw(gt_occ.cpu().numpy()[0], voxel_origin=cfg.pc_range, voxel_size=cfg.grid_size)
 
                 miou_metric._after_step(pred_occ, gt_occ)
             

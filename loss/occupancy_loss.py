@@ -141,7 +141,7 @@ class OccupancyLoss(BaseLoss):
                     lovasz_input = torch.softmax(semantics, dim=1)
                 else:
                     lovasz_input = semantics
-                print(torch.unique(sampled_label), torch.bincount(sampled_label.reshape(-1)), torch.bincount(torch.argmax(lovasz_input, 1).reshape(-1)), self.lovasz_ignore)
+                #print(torch.unique(sampled_label), torch.bincount(sampled_label.reshape(-1)), torch.bincount(torch.argmax(lovasz_input, 1).reshape(-1)), self.lovasz_ignore)
                 loss_dict['loss_voxel_lovasz'] = self.loss_voxel_lovasz_weight * lovasz_softmax(
                     lovasz_input.transpose(1, 2).flatten(0, 1), sampled_label.flatten(), ignore=self.lovasz_ignore)
             if self.use_dice_loss:

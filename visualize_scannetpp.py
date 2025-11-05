@@ -210,9 +210,12 @@ def main(local_rank, args):
             pc_range = cfg.pc_range
             grid_size = 0.16
         else:
-            occ_shape = [240, 240, 80]
+            # occ_shape = [240, 240, 80]
+            # pc_range = cfg.pc_range
+            # grid_size = 0.05
+            occ_shape = [120, 120, 40]
             pc_range = cfg.pc_range
-            grid_size = 0.05
+            grid_size = 0.1
     else:
         miou_metric = MeanIoU(
             list(range(1, 17)),
@@ -292,7 +295,7 @@ def main(local_rank, args):
                     o3d_cam_axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5, origin=[0,0,0])
                     o3d_cam_axis.transform(cam_pose)
                     o3d_cam_axis_list.append(o3d_cam_axis)
-                    
+
                 o3d.visualization.draw_geometries([o3d_voxel_grid, *o3d_cam_axis_list])
 
                 miou_metric._after_step(pred_occ, gt_occ)

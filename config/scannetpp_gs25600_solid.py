@@ -81,8 +81,9 @@ embed_dims = 128
 num_decoder = 4
 num_single_frame_decoder = 1
 pc_range = [-6.0, -6.0, -0.78, 6.0, 6.0, 3.22]
+grid_dim = [120, 120, 40]
 grid_size = 0.1
-scale_range = [0.08, 0.64]
+scale_range = [0.01, 0.10]
 xyz_coordinate = 'cartesian'
 phi_activation = 'sigmoid'
 include_opa = True
@@ -202,7 +203,7 @@ model = dict(
         cuda_kwargs=dict(
             _delete_=True,
             scale_multiplier=3,
-            H=120, W=120, D=40,
+            H=grid_dim[0], W=grid_dim[1], D=grid_dim[2],
             pc_min=[pc_range[0], pc_range[1], pc_range[2]],
             grid_size=grid_size),
     )

@@ -73,9 +73,10 @@ run:
 
 # export SCANNET_PATH=/media/sequor/PortableSSD/scannetpp && make run
 # python train.py --py-config config/scannetpp_gs144000.py --work-dir out/scannetpp
+# python train.py --py-config config/scannetpp_gs25600_solid.py --work-dir out/scannetpp
 # python train.py --py-config config/scannetppsmall_gs25600_solid.py --work-dir out/scannetpp
-# CUDA_VISIBLE_DEVICES=0 python visualize_scannetpp.py --py-config config/scannetppsmall_gs25600_solid.py --work-dir out/scannetpp --vis-occ --model-type base --resume-from out/scannetpp/epoch_200.pth
-# CUDA_VISIBLE_DEVICES=0 python visualize_scannetpp.py --py-config config/scannetpp_gs25600_solid.py --work-dir out/scannetpp --vis-occ --model-type base --resume-from out/scannetpp/epoch_200.pth
+# CUDA_VISIBLE_DEVICES=0 python visualize_scannetpp.py --py-config config/scannetppsmall_gs25600_solid.py --work-dir out/scannetppsmall --vis-occ --model-type base --resume-from out/scannetppsmall/epoch_200.pth
+# CUDA_VISIBLE_DEVICES=0 python visualize_scannetpp.py --py-config config/scannetpp_gs25600_solid.py --work-dir out/scannetpp --vis-occ --model-type base --resume-from out/scannetpp/epoch_30.pth
 
 # export SCANNET_PATH=/data/scannetpp && make run
 # python train.py --py-config config/scannetpp_gs144000.py --work-dir out/scannetpp

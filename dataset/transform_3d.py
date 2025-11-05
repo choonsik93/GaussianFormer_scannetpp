@@ -550,7 +550,8 @@ class LoadOccupancyScannetpp(object):
         if self.small_bound:
             xyz = self.get_meshgrid([-3.2, -3.2, -0.78, 3.2, 3.2, 1.78], [40, 40, 16], 0.16)
         else:
-            xyz = self.get_meshgrid([-6.0, -6.0, -0.78, 6.0, 6.0, 3.22], [240, 240, 80], 0.05)
+            # xyz = self.get_meshgrid([-6.0, -6.0, -0.78, 6.0, 6.0, 3.22], [240, 240, 80], 0.05)
+            xyz = self.get_meshgrid([-6.0, -6.0, -0.78, 6.0, 6.0, 3.22], [120, 120, 40], 0.1)
         self.xyz = np.concatenate([xyz, np.ones_like(xyz[..., :1])], axis=-1) # x, y, z, 4
 
     def get_meshgrid(self, ranges, grid, reso):
@@ -574,10 +575,16 @@ class LoadOccupancyScannetpp(object):
         if self.small_bound:
             new_label = np.zeros((40, 40, 16), dtype=np.int64)
         else:
-            new_label = np.zeros((240, 240, 80), dtype=np.int64)
-        new_label[label[:, 0], label[:, 1], label[:, 2]] = label[:, 3]
-        new_label[new_label == 0] = 12
-        new_label[new_label == 255] = 0  # unknown to empty
+            # new_label = np.zeros((240, 240, 80), dtype=np.int64)
+            new_label = np.zeros((120, 120, 40), dtype=np.int64)
+            new_label[label[:, 0] // 2, label[:, 1] // 2, label[:, 2] // 2] = label[:, 3]
+            new_label[new_label == 0] = 12
+            new_label[new_label == 255] = 0  # unknown to empty
+        
+        # new_label = np.zeros((240, 240, 80), dtype=np.int64)
+        # new_label[label[:, 0], label[:, 1], label[:, 2]] = label[:, 3]
+        # new_label[new_label == 0] = 12
+        # new_label[new_label == 255] = 0  # unknown to empty
 
         mask = new_label != 0
 
@@ -594,6 +601,7 @@ class LoadOccupancyScannetpp(object):
             occ_xyz = xyz[..., :3]
         else:
             NotImplementedError
+
         results['occ_xyz'] = occ_xyz
         return results
 
